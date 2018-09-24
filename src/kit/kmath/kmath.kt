@@ -1,7 +1,9 @@
 package kit.kmath
 
-import kit.kiter.*
-import kotlin.math.*
+import kit.kboxes.multisets.Counter
+import kit.kiter.countFrom
+import kit.krepl.pipe
+import kotlin.math.sqrt
 
 val Int.isprime: Boolean
     get() {
@@ -10,20 +12,20 @@ val Int.isprime: Boolean
         if (this % 2 == 0 || this % 3 == 0)
             return false
 
-        for (i in 5 .. this.iSqrt() step 6) {
-            if (this % i == 0 || this % (i + 2) == 0){
+        for (i in 5..this.iSqrt() step 6) {
+            if (this % i == 0 || this % (i + 2) == 0) {
                 return false
             }
         }
         return true
-}
+    }
 
 fun listOfPrimes(lessThan: Int): List<Int> {
     if (lessThan <= 2) return emptyList()  // empty
     val nums = BooleanArray(lessThan) { true }
     nums[0] = false
     nums[1] = false
-    for (num in 2 .. lessThan.iSqrt()) {
+    for (num in 2..lessThan.iSqrt()) {
         for (counter in countFrom(num)) {
             val product = counter * num
             if (product >= lessThan) break
@@ -86,7 +88,7 @@ fun Int.factorize(): Map<Int, Int> {
 
 
 fun Int.num_factors(): Int {
-    return this.factorize().values.asSequence().map {it + 1}.product()
+    return this.factorize().values.asSequence().map { it + 1 }.product()
 }
 
 //fun Int.all_factors(): List<Int> {
@@ -94,14 +96,15 @@ fun Int.num_factors(): Int {
 //}
 
 fun weightedSum(itr: List<Pair<Double, Double>>): Double {
-    val numerator = itr.map { (v, w) -> v * w } .sum()
-    val denominator = itr.map { it.second } .sum()
+    val numerator = itr.map { (v, w) -> v * w }.sum()
+    val denominator = itr.map { it.second }.sum()
     return numerator / denominator
 }
+
 fun weightedSum(values: List<Double>, weights: List<Double>): Double {
     if (values.size != weights.size)
         throw IllegalArgumentException(
-                "values.size (${values.size}) != weights.size (${weights.size})")
+                "keys.size (${values.size}) != weights.size (${weights.size})")
     return weightedSum(values.zip(weights))
 }
 
@@ -118,19 +121,20 @@ fun gcd(x: Int, y: Int): Int {
 }
 
 
-fun Collection<Double>.mean() = this.sum()/this.size
-fun Collection<Int>.mean() = this.sum()/this.size
+fun Collection<Double>.mean() = this.sum() / this.size
+fun Collection<Int>.mean() = this.sum() / this.size
 
 fun Collection<Double>.median(): Double {
     val vector = this.sorted()
-    if (this.size % 2 == 0){
+    if (this.size % 2 == 0) {
         return vector[this.size / 2]
     }
-    return vector.slice((this.size/2) .. (this.size/2+1)).mean()
+    return vector.slice((this.size / 2)..(this.size / 2 + 1)).mean()
 }
+
 fun Collection<Int>.median(): Pair<Int, Int> {
     val vector = this.sorted()
-    if (this.size % 2 == 0){
+    if (this.size % 2 == 0) {
         val res = vector[this.size / 2]
         return Pair(res, res)
     }
@@ -138,7 +142,30 @@ fun Collection<Int>.median(): Pair<Int, Int> {
 }
 
 
-fun mode(){}
+fun <T> Iterable<T>.mode(): Set<T> {
+    val mostCommon = this.pipe(::Counter).mostCommon()
+
+    if (mostCommon.isEmpty()) return setOf()
+
+    for ((index, count) in mostCommon.withIndex()) {
+        if (count.count != mostCommon[0].count) {
+            return mostCommon.asSequence().take(index).map { it.element }.toSet()
+        }
+    }
+
+    return mostCommon.asSequence().map { it.element }.toSet()
+}
+
+
+fun DoubleArray.norm(): Double {
+    return this.asSequence().map { it * it }.sum().sqrt()
+}
+
+fun DoubleArray.unit(): DoubleArray {
+    val norm = this.norm()
+    return this.map { it / norm }.toDoubleArray()
+}
+
 
 fun Iterable<Int>.product() = this.reduce(Int::times)
 fun Iterable<Long>.product() = this.reduce(Long::times)
@@ -149,6 +176,10 @@ fun Sequence<Double>.product() = this.reduce(Double::times)
 
 fun Long.factorial() = if (this > 1) (1L..this).product() else 1
 fun Int.factorial() = this.toLong().factorial()
+
+fun Double.sqrt() = sqrt(this)
+fun Int.sqrt() = sqrt(this.toDouble())
+fun Long.sqrt() = sqrt(this.toDouble())
 
 private fun Double.iSqrt() = sqrt(this).toInt()
 private fun Int.iSqrt() = sqrt(this.toDouble()).toInt()
