@@ -1,25 +1,31 @@
 package kit.kmath
 
 import kit.kboxes.multisets.Counter
+import kit.kboxes.multisets.MultiSet
 import kit.kiter.countFrom
-import kit.krepl.pipe
 import kotlin.math.sqrt
 
-val Int.isprime: Boolean
-    get() {
-        if (this < 4)
-            return this >= 2
-        if (this % 2 == 0 || this % 3 == 0)
+/**
+ * @return `true` if this is a prime number
+ */
+fun Int.isPrime(): Boolean {
+
+    if (this < 4)
+        return this >= 2
+    if (this % 2 == 0 || this % 3 == 0)
+        return false
+
+    for (i in 5..this.iSqrt() step 6) {
+        if (this % i == 0 || this % (i + 2) == 0) {
             return false
-
-        for (i in 5..this.iSqrt() step 6) {
-            if (this % i == 0 || this % (i + 2) == 0) {
-                return false
-            }
         }
-        return true
     }
+    return true
+}
 
+/**
+ * @return a [List] of primes up to (not including) `lessThan`
+ */
 fun listOfPrimes(lessThan: Int): List<Int> {
     if (lessThan <= 2) return emptyList()  // empty
     val nums = BooleanArray(lessThan) { true }
@@ -40,67 +46,97 @@ fun listOfPrimes(lessThan: Int): List<Int> {
             .toList()
 }
 
-fun Int.factorize(): Map<Int, Int> {
+/**
+ * Find the prime factors of [this]
+ * @throws IllegalArgumentException when [this] is less than 1
+ * @return a [MultiSet] of `primeFactor: exponent` pairs.
+ */
+fun Int.factorize(): MultiSet<Int> {
 
     if (this < 1)
         throw IllegalArgumentException("$this is less that 1")
 
-    val possible_primes = listOfPrimes(this)
-    val p_factors = mutableListOf<Int>()
+    val primes = listOfPrimes(this)
+    val factors = Counter<Int>()
 
-    var m = this
+    var value = this
     var sqrtM: Int
-    var broke: Boolean
+    var valueIsPrime: Boolean
 
-    while (m != 1) {
+    while (value != 1) {
 
-        if (m in possible_primes) {
-            p_factors.add(m)
+        if (value in primes) {
+            factors.add(value)
             break
         }
 
-        broke = false
-        sqrtM = m.iSqrt()
-        for (prime in possible_primes.takeWhile { it < sqrtM }) {
-            if (m % prime == 0) {
-                m /= prime
-                p_factors.add(prime)
-                broke = true
+        valueIsPrime = true // unless found to be otherwise
+        sqrtM = value.iSqrt()
+        for (prime in primes.takeWhile { it <= sqrtM }) {
+            if (value % prime == 0) {
+                value /= prime
+                factors.add(prime)
+                valueIsPrime = false
                 break
             }
         }
 
-        if (!broke) {
-            p_factors.add(m)
-            break
+        // rare case -- value is prime
+        if (valueIsPrime) {
+            return factors.also { it.add(value) }
         }
     }
 
-    val result = mutableMapOf<Int, Int>()
+    return factors
+}
 
-    for (factor in p_factors) {
-        result[factor] = 1 + (result[factor] ?: 0)
-    }
+/**
+ * @throws IllegalArgumentException when [this] > 1
+ * @return the number of divisions of [this] integer has
+ */
+fun Int.numFactors(): Int {
+    return this.factorize().asSequence().map { it.count + 1 }.product()
+}
 
-    return result
+data class DivModResult<Q, D>(val quotient: Q, val divisor: D)
 
+fun divmod(a: Int, b: Int) = DivModResult(a / b, a % b)
+fun divmod(a: Long, b: Long) = DivModResult(a / b, a % b)
+fun divmod(a: Double, b: Long): DivModResult<Long, Double> {
+    val aAsInt = a.toLong()
+    val aFractionPart = a - aAsInt
+    val (q, r) = divmod(a.toLong(), b)
+    return DivModResult(q, r + aFractionPart)
+}
+fun divmod(a: Double, b: Int): DivModResult<Int, Double> {
+    val (q, d) = divmod(a, b.toLong())
+    return DivModResult(q.toInt(), d)
 }
 
 
-fun Int.num_factors(): Int {
-    return this.factorize().values.asSequence().map { it + 1 }.product()
-}
 
-//fun Int.all_factors(): List<Int> {
+
+//fun Int.allFactors(): List<Int> {
 //    todo
 //}
 
-fun weightedSum(itr: List<Pair<Double, Double>>): Double {
-    val numerator = itr.map { (v, w) -> v * w }.sum()
-    val denominator = itr.map { it.second }.sum()
+/**
+ * Calculate the wighted sum
+ *
+ * @param pairs: An iterable of values and weights
+ */
+fun weightedSum(pairs: List<Pair<Double, Double>>): Double {
+    val numerator = pairs.map { (v, w) -> v * w }.sum()
+    val denominator = pairs.map { it.second }.sum()
     return numerator / denominator
 }
 
+/**
+ * Calculate the weighted sum. `values` and `weights` must be the same length.
+ *
+ * @param values: The values
+ * @param weights: The weights
+ */
 fun weightedSum(values: List<Double>, weights: List<Double>): Double {
     if (values.size != weights.size)
         throw IllegalArgumentException(
@@ -109,6 +145,9 @@ fun weightedSum(values: List<Double>, weights: List<Double>): Double {
 }
 
 
+/**
+ * The greatest common divisor of `x` and `y`.
+ */
 fun gcd(x: Int, y: Int): Int {
     var a = x
     var b = y
@@ -121,40 +160,6 @@ fun gcd(x: Int, y: Int): Int {
 }
 
 
-fun Collection<Double>.mean() = this.sum() / this.size
-fun Collection<Int>.mean() = this.sum() / this.size
-
-fun Collection<Double>.median(): Double {
-    val vector = this.sorted()
-    if (this.size % 2 == 0) {
-        return vector[this.size / 2]
-    }
-    return vector.slice((this.size / 2)..(this.size / 2 + 1)).mean()
-}
-
-fun Collection<Int>.median(): Pair<Int, Int> {
-    val vector = this.sorted()
-    if (this.size % 2 == 0) {
-        val res = vector[this.size / 2]
-        return Pair(res, res)
-    }
-    return Pair(vector[this.size / 2], vector[this.size / 2 + 1])
-}
-
-
-fun <T> Iterable<T>.mode(): Set<T> {
-    val mostCommon = this.pipe(::Counter).mostCommon()
-
-    if (mostCommon.isEmpty()) return setOf()
-
-    for ((index, count) in mostCommon.withIndex()) {
-        if (count.count != mostCommon[0].count) {
-            return mostCommon.asSequence().take(index).map { it.element }.toSet()
-        }
-    }
-
-    return mostCommon.asSequence().map { it.element }.toSet()
-}
 
 
 fun DoubleArray.norm(): Double {

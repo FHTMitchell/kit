@@ -18,10 +18,8 @@ internal class CounterTest {
     @Test
     fun `test removeAll`() {
         val mutD = d.toMutableMultiSet()
-        mutD.removeAll(listOf(1, 2))
-        assertEquals(Counter.of(1), mutD)
+        mutD.removeAll(d.elements)
+        assertEquals(Counter.of<Int>(), mutD)
     }
-
-
 
 }

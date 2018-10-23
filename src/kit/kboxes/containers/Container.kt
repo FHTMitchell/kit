@@ -3,7 +3,7 @@ package kit.kboxes.containers
 /**
  * Same interface as Collection<E> but without an iterator
  */
-interface Container<E> {
+interface Container<in E> {
 
     /**
      * The size of the container

@@ -6,10 +6,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
     </content>
-    <content url="file://$MODULE_DIR$/../test">
-      <sourceFolder url="file://$MODULE_DIR$/../test/src" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/../test/out" />
-    </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
